@@ -16,10 +16,10 @@ Once Helm is set up properly, add the repo as follows:
 helm repo add alveo-charts https://alvdevcl.github.io/helm-charts
 ```
 
-You can then run `helm search repo grafana` to see the charts.
+You can then run `helm search repo alveo-charts` to see the charts.
 
 <!-- Keep full URL links to repo files because this README syncs from main to gh-pages.  -->
-Chart documentation is available in [grafana directory](https://github.com/alvdevcl/helm-charts/blob/main/charts/alvdevcl/README.md).
+Chart documentation is available in [Helm charts directory](https://github.com/alvdevcl/helm-charts/blob/main/charts/alvdevcl/README.md).
 
 ## Contributing
 
