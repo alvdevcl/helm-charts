@@ -1,0 +1,272 @@
+# Default values for Ops360 Auth Service chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+# Resources
+serviceMemory: 2G
+
+# Service Image Config Path
+serviceConfigPath: "/opt/docker/conf/load"
+
+
+## Security
+# Configure Java Keystore
+keystoreEnabled: true
+
+# AC Authentication
+authEnabled: true
+
+# Secrets
+secretName: auth-service-secrets
+
+image:
+  registry: "187368916732.dkr.ecr.us-east-1.amazonaws.com"
+  name: authentication-service
+  tag: 1.0.9
+  pullPolicy: Always
+  port: 9000
+  args: ["-Dplay.http.context=/"]
+
+  containerEnvs:
+    - name: PASSWORD_STRENGTH_CHECK_ENABLED
+      value: "true"
+    - name: BDMS_BASE_URL
+      value: "bdms-service.ops360.svc.cluster.local:6969"
+    - name: DB_URL
+      valueFrom:
+        secretKeyRef:
+          name: auth-service-secrets
+          key: POSTGRES_URL
+    - name: DB_USER
+      valueFrom:
+        secretKeyRef:
+          name: auth-service-secrets
+          key: POSTGRES_USERNAME
+    - name: DB_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: auth-service-secrets
+          key: POSTGRES_PASSWORD
+    - name: KEYSTORE_FILE
+      value: "/opt/docker/conf/external/keystore.jks"
+
+
+serviceAccountName: auth-service-sa
+namespace: ops360
+serviceAccountRoleArn: "arn:aws:iam::696513474302:role/secrets-csi-role"
+
+secretStoreName: "ops360-auth-secret-store"
+awsRegion: "us-east-1"
+
+externalSecretName: "ops360-auth-secret"
+
+secman_secret_entries:
+  - POSTGRES_USERNAME
+  - POSTGRES_PASSWORD
+  - POSTGRES_DATABASE
+  - POSTGRES_HOST
+  - POSTGRES_PORT
+  - PLAY_HTTP_SECRET_KEY
+  - KEYSTORE_KEY_ALIAS
+  - KEYSTORE_KEY_PASSWORD
+  - KEYSTORE_PASSWORD
+  - KEYSTORE_SIG_ALG
+
+secman_name: "dev/ops360/auth-service"
+
+
+
+
+# Configuration values for setting up CSI driver integration
+vault:
+  keystoreSecretName: auth-service-keystore-secrets
+  # Name of the Key Vault containing the secrets
+  secrets:
+    # yamllint disable-line rule:line-length
+    - objectName: "arn:aws:secretsmanager:us-east-1:696513474302:secret:dev/ops360/auth-service-guKEPM"
+      objectType: "secretsmanager"
+      objectVersionLabel: "AWSCURRENT"
+      jmesPath:
+        - path: "POSTGRES_USERNAME"
+          objectAlias: "POSTGRES_USERNAME"
+        - path: "POSTGRES_PASSWORD"
+          objectAlias: "POSTGRES_PASSWORD"
+        - path: "POSTGRES_DATABASE"
+          objectAlias: "POSTGRES_DATABASE"
+        - path: "POSTGRES_HOST"
+          objectAlias: "POSTGRES_HOST"
+        - path: "POSTGRES_URL"
+          objectAlias: "POSTGRES_URL"
+        - path: "POSTGRES_PORT"
+          objectAlias: "POSTGRES_PORT"
+        - path: "PLAY_HTTP_SECRET_KEY"
+          objectAlias: "PLAY_HTTP_SECRET_KEY"
+        - path: "KEYSTORE_KEY_ALIAS"
+          objectAlias: "KEYSTORE_KEY_ALIAS"
+        - path: "KEYSTORE_KEY_PASSWORD"
+          objectAlias: "KEYSTORE_KEY_PASSWORD"
+        - path: "KEYSTORE_PASSWORD"
+          objectAlias: "KEYSTORE_PASSWORD"
+        - path: "KEYSTORE_SIG_ALG"
+          objectAlias: "KEYSTORE_SIG_ALG"
+    # yamllint disable-line rule:line-length
+    - objectName: "arn:aws:secretsmanager:us-east-1:696513474302:secret:dev/ops360/keystore-0qubwb"
+      objectType: "secretsmanager"
+      objectEncoding: base64
+      objectVersionLabel: "AWSCURRENT"
+      jmesPath:
+        - path: "KEYSTORE_FILE"
+          objectAlias: "KEYSTORE_FILE"
+  secretObjects:
+    - secretName: auth-service-secrets
+      type: Opaque
+      data:
+        - objectName: "POSTGRES_USERNAME"
+          key: POSTGRES_USERNAME
+        - objectName: "POSTGRES_PASSWORD"
+          key: POSTGRES_PASSWORD
+        - objectName: "POSTGRES_DATABASE"
+          key: POSTGRES_DATABASE
+        - objectName: "POSTGRES_HOST"
+          key: POSTGRES_HOST
+        - objectName: "POSTGRES_URL"
+          key: POSTGRES_URL
+        - objectName: "POSTGRES_PORT"
+          key: POSTGRES_PORT
+        - objectName: "PLAY_HTTP_SECRET_KEY"
+          key: PLAY_HTTP_SECRET_KEY
+        - objectName: "KEYSTORE_KEY_ALIAS"
+          key: KEYSTORE_KEY_ALIAS
+        - objectName: "KEYSTORE_KEY_PASSWORD"
+          key: KEYSTORE_KEY_PASSWORD
+        - objectName: "KEYSTORE_PASSWORD"
+          key: KEYSTORE_PASSWORD
+        - objectName: "KEYSTORE_SIG_ALG"
+          key: KEYSTORE_SIG_ALG
+
+    - secretName: auth-service-keystore-secrets
+      type: Opaque
+      data:
+        - objectName: "KEYSTORE_FILE"
+          key: keystore.jks
+
+  # Name of the Kubernetes secret containing the service principal credentials
+  # servicePrincipalSecretName: "secrets-store-creds"
+  secretProviderClassName: "auth-service-secret-provider-class"
+  # optional name of the volume
+  volumeName: "auth-secret-volume"
+  # optional directory to mount the secrets
+  secretsDir: "/mnt/secrets"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations:
+    # yamllint disable-line rule:line-length
+    eks.amazonaws.com/role-arn: arn:aws:iam::696513474302:role/secrets-csi-role
+    # eks.amazonaws.com/role-arn: arn:aws:iam::696513474302:role/auth-secrets-csi-role
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: "auth-service-sa"
+
+podAnnotations: {}
+
+podLabels:
+  project: dm20
+  subproject: gid
+  mode: api
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 9000
+
+ingress:
+  enabled: true
+  className: ""
+  domain: domain.example.com
+  prefix: /auth/api
+  pathType: ImplementationSpecific
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: 200m
+    nginx.ingress.kubernetes.io/server-snippet: |-
+      add_header X-Request-ID $request_id;
+      keepalive_timeout 70;
+      underscores_in_headers on;
+      proxy_http_version 1.1;
+      client_max_body_size 0;
+      client_header_buffer_size 4096k;
+      large_client_header_buffers 4 8096k;
+      gzip  on;
+      gzip_types
+        text/css
+        text/javascript
+        text/xml
+        text/plain
+        application/javascript
+        application/x-javascript
+        application/json;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "Upgrade";
+    nginx.ingress.kubernetes.io/configuration-snippet: |-
+      more_set_headers "Cache-Control: no-cache";
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "24576k"
+    nginx.ingress.kubernetes.io/client-body-buffer-size: 200M
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+replicaCount: 1
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPUUtilizationPercentage: 0
+  targetMemoryUtilizationPercentage: 0
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+
+## Extra manifests to deploy as an array
+extraManifests: []
+  # - apiVersion: v1
+  #   kind: ConfigMap
+  #   metadata:
+  #   labels:
+  #     name: prometheus-extra
+  #   data:
+  #     extra-data: "value"

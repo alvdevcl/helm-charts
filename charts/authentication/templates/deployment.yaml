@@ -1,0 +1,111 @@
+{{- $fullName := include "helm.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+    app: {{ .Release.Name }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit | default 10 }}
+  selector:
+    matchLabels:
+      {{- include "helm.selectorLabels" . | nindent 6 }}
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "helm.selectorLabels" . | nindent 8 }}
+        project: {{ .Values.podLabels.project }}
+        subproject: {{ .Values.podLabels.subproject }}
+        repo: {{ .Chart.Name }}
+        app: {{ .Release.Name }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "helm.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- if .Values.image.repository }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          {{- else }}
+          image: "{{ .Values.image.registry }}/{{ .Values.image.name }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          {{- end }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.image.containerEnvs }}
+          {{- with .Values.image.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+{{ toYaml .Values.image.containerEnvs | indent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.image.port | default 80 }}
+              protocol: TCP
+          # livenessProbe:
+          #   {{ if .Values.image.probe -}}
+          #   httpGet:
+          #     path: {{ .Values.image.probe.liveness.path | default "/" }}
+          #     port: http
+          #   periodSeconds: {{ .Values.image.probe.liveness.periodSeconds | default "10" }}
+          #   timeoutSeconds: {{ .Values.image.probe.liveness.timeoutSeconds | default "1" }}
+          #   terminationGracePeriodSeconds: {{ .Values.image.probe.liveness.terminationGracePeriodSeconds | default "30" }}
+          #   {{- else -}}
+          #   exec:
+          #     command:
+          #       - ls
+          #   {{- end }}            
+          # readinessProbe:
+          #   {{ if .Values.image.probe -}}
+          #   httpGet:
+          #     path: {{ .Values.image.probe.readiness.path | default "/" }}
+          #     port: http
+          #   {{- else -}}
+          #   exec:
+          #     command:
+          #       - ls
+          #   {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            {{- include "tmpVolumeMount" . | indent 16 }}
+            {{- include "configVolumeMount" . | indent 16 }}
+            {{- include "keystoreVolumeMount" . | indent 16 }}
+            {{- if .Values.vault }} 
+            {{- include "secretVolumeMount" . | indent 16 }}
+            {{- end }}
+      volumes:
+        {{- include "tmpVolume" . | indent 12 }}
+        {{- include "keystoreVolume" . | indent 12 }}
+        {{- include "configVolume" . | indent 12 }}
+        {{- if .Values.vault }}
+        {{- include "secretVolume" . | indent 12 }}
+        {{- end }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

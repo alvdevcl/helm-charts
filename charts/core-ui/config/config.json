@@ -1,0 +1,51 @@
+{
+    "menuIcons": true,
+    "operationsDashboard": {
+        "pollingInterval": {
+        "statistics": 30000,
+        "processes": 30000,
+        "processDetails": 5000
+        }
+    },
+    "endpoints": {
+        "authenticate": "/api/v1/authenticate",
+        "changePassword": "/api/v1/password",
+        "openId": "auth/api/v1/openid"
+    },
+    "url": {
+        "headerIframeURL": "/header",
+        "authServiceURL": "/auth",
+        "landingPageURL": "/ops360",
+        "parentKey": "parent",
+        "originKey": "origin"
+    },
+    "cookie": {
+        "tokenKey": "rights",
+        "tokenUnauthorizedValue": "unauthorized"
+    },
+    "browsing": {
+        "timeSeriesDefaultRange": "1Y",
+        "isSpreadSheetServiceSupported": true,
+        "isLineageServiceSupported": true
+    },
+    "acquisition": {
+        "programNames": {
+        "getCompany": ["BB_COMPANY"],
+        "getHistory": ["BB_GLOBAL", "BB_UNIQUE", "CUSIP", "ISIN", "SEDOL", "TICKER"]
+        }
+    },
+    "helperSites": [
+        {
+        "url": "/learn",
+        "title": "Learn",
+        "variant": "whitish",
+        "src": "https://asset-control.docebosaas.com/learn"
+        },
+        {
+        "url": "/clientPortal",
+        "title": "Client Portal",
+        "variant": "yellowish",
+        "src": "https://portal.asset-control.com/jira/servicedesk/customer/user/login?destination=portals&logout=true"
+        }
+    ]
+    }

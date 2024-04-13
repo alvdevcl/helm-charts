@@ -1,0 +1,142 @@
+# Default values for Ops360 Core UI chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+
+# Service Image Config Path
+serviceConfigPath: "/var/www/conf"
+
+
+## Security
+# Configure Java Keystore
+keystoreEnabled: false
+
+# AC Authentication
+authEnabled: true
+
+
+
+image:
+  registry: "187368916732.dkr.ecr.us-east-1.amazonaws.com"
+  name: authentication-ui
+  tag: 1.0.7
+  pullPolicy: Always
+  port: 8080
+  command: 
+   - /bin/sh
+   - -c
+   - |
+     nginx-debug -g "daemon off;"
+
+
+  containerEnvs: {}
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podLabels:
+  suite: Ops360
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+ingress:
+  enabled: false
+  className: "nginx"
+  domain: example.domain.com
+  prefix: /auth
+  pathType: Prefix
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: 200m
+    
+    nginx.ingress.kubernetes.io/server-snippet: |-
+      add_header X-Request-ID $request_id;
+      keepalive_timeout 70;
+      underscores_in_headers on;
+      proxy_http_version 1.1;
+      client_max_body_size 0;
+      client_header_buffer_size 4096k;
+      large_client_header_buffers 4 8096k;
+      gzip  on;
+      gzip_types
+        text/css
+        text/javascript
+        text/xml
+        text/plain
+        application/javascript
+        application/x-javascript
+        application/json;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "Upgrade";
+    nginx.ingress.kubernetes.io/configuration-snippet: |-
+      more_set_headers "Cache-Control: no-cache";
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "24576k"
+    nginx.ingress.kubernetes.io/client-body-buffer-size: 200M
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+replicaCount: 1
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPUUtilizationPercentage: 0
+  targetMemoryUtilizationPercentage: 0
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+
+## Extra manifests to deploy as an array
+extraManifests: []
+  # - apiVersion: v1
+  #   kind: ConfigMap
+  #   metadata:
+  #   labels:
+  #     name: prometheus-extra
+  #   data:
+  #     extra-data: "value"

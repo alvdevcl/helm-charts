@@ -1,0 +1,16 @@
+{{- $fullName := include "helm.fullname" . -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+    app: {{ .Release.Name }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port | default .Values.image.port }}
+      targetPort: 9000
+  selector:
+    {{- include "helm.selectorLabels" . | nindent 4 }}
+    app: {{ .Release.Name }}
